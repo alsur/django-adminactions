@@ -55,6 +55,7 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
 
     all_m2m = {}
     all_related = {}
+    all_related_related = {}
 
     if related == ALL_FIELDS:
         related = [rel.get_accessor_name()
@@ -62,7 +63,6 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
 
     if m2m == ALL_FIELDS:
         m2m = [field.name for field in master._meta.many_to_many]
-
     if m2m and not commit:
         raise ValueError('Cannot save related with `commit=False`')
     with compat.atomic():
@@ -75,6 +75,7 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
 
         if m2m:
             for fieldname in set(m2m):
+
                 all_m2m[fieldname] = []
                 field_object = get_field_by_path(master, fieldname)
                 if not isinstance(field_object, ManyToManyField):
@@ -90,6 +91,28 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
                     try:
                         accessor = getattr(other, name)
                         all_related[name] = [(related_object.field.name, accessor)]
+                        # AUTHOR: jose@alsur.es
+                        # Algunos elementos relacionados (B) con (A) tienen a su vez relaciones many_to_many con
+                        # otros elementos (C). Siendo la relacion B-C y no A-C, en el merge se pierden esta
+                        # relacion, al no ser directa.
+
+                        # FIXME: entendemos que solo en los manytomany ocurre este problema. Si no es asi, arreglamos en
+                        # siguientes pasos
+                        related_accessor = [field.name for field in accessor._meta.many_to_many]
+                        all_related_related[name] = {}
+                        # agrupo las relaciones de B creando un nuevo diccionario all_related_related
+                        # con la siguiente estructura: {B: {C: [C1, C2]}}
+                        # posteriormente este diccionario lo usare para cambiar la relacion.
+
+                        # TODO: Darle un poco de vueltas a esto. Algo puede escaparse
+                        for ra in related_accessor:
+                            all_related_related[name][ra] = []
+                            related_field_object = get_field_by_path(accessor, ra)
+                            source_related_m2m = getattr(accessor, related_field_object.name)
+                            for sr_m2m in source_related_m2m.all():
+                                all_related_related[name][ra].append(sr_m2m)
+
+
                     except ObjectDoesNotExist:
                         pass
                 else:
@@ -102,9 +125,42 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
             for name, elements in list(all_related.items()):
                 for rel_fieldname, element in elements:
                     setattr(element, rel_fieldname, master)
+                    # AUTHOR: jose@alsur.es
+                    # si el nombre del elemento esta incluido en all_related_related significa que el elemento
+                    # puede tener relaciones many_to_many que se pueden perder. Con esto lo que hago es enlazar
+                    # al nuevo ID, que ha sido cambiado en el paso anterior.
+                    if name in all_related_related:
+                        # element_relateds: relaciones m2m con el elemento
+                        element_relateds = all_related_related.get(name, None)
+                        # related_name: cada iteracion de relateds_element
+                        for related_name in element_relateds:
+                            # relateds_element_m2m: manager para establecer la relacion many_to_many
+                            # add_relateds: nuevas entradas para la relacion many_to_many
+                            # add_related_item: cada iteracion de add_relateds
+                            element_relateds_m2m = getattr(element, related_name, None)
+                            add_relateds = element_relateds.get(related_name, None)
+                            if add_relateds:
+                                for add_related_item in add_relateds:
+                                    element_relateds_m2m.add(add_related_item)
                     element.save()
 
-            other.delete()
+
+            # django.db.models.deletion viene con un comentario #FIXME
+            # AUTHOR: jose@alsur.es
+            # si el elemento other (el que se va a borrar) tiene parents, daba un error propio de Django, ya que
+            # al retornar el elemento padre no traia el dato del id. Lo hemos arreglado anadiendolo y posteriormente
+            # borrando el padre
+            other_meta_parents = len(other._meta.parents)
+            if other_meta_parents:
+                for ptr in six.itervalues(other._meta.parents):
+                    if ptr:
+                        parent_other = getattr(other, ptr.name, None) # elemento padre
+                        parent_other_pk_attname = parent_other._meta.pk.attname # obtengo la primary key
+                        parent_other_pk = other._get_pk_val()
+                        setattr(parent_other, parent_other_pk_attname, parent_other_pk)
+                        parent_other.delete()
+            else:
+                other.delete()
             result.save()
             for fieldname, elements in list(all_m2m.items()):
                 dest_m2m = getattr(result, fieldname)
@@ -387,7 +443,7 @@ def export_as_xls3(queryset, fields=None, header=None,  # noqa
     sheet.write(row, 0, force_text('#'), formats['_general_'])
     if header:
         if not isinstance(header, (list, tuple)):
-            header = [force_text(f.verbose_name)for f in queryset.model._meta.fields if f.name in fields]
+            header = [force_text(f.verbose_name) for f in queryset.model._meta.fields if f.name in fields]
 
         for col, fieldname in enumerate(header, start=1):
             sheet.write(row, col, force_text(fieldname), formats['_general_'])

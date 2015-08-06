@@ -94,6 +94,7 @@ def merge(modeladmin, request, queryset):  # noqa
 
     tpl = 'adminactions/merge.html'
     # transaction_supported = model_supports_transactions(modeladmin.model)
+
     ctx = {
         '_selected_action': request.POST.getlist(helpers.ACTION_CHECKBOX_NAME),
         'transaction_supported': 'Un',
@@ -131,12 +132,16 @@ def merge(modeladmin, request, queryset):  # noqa
             ok = form.is_valid()
             other.pk = stored_pk
         if ok:
+            # AUTHOR: jose@alsur.es
+            # agrego misma logica a los manytomany si hemos elegido mover dependencias
             if form.cleaned_data['dependencies'] == MergeForm.DEP_MOVE:
                 related = api.ALL_FIELDS
+                m2m = api.ALL_FIELDS
             else:
                 related = None
+                m2m = None
             fields = form.cleaned_data['field_names']
-            api.merge(master, other, fields=fields, commit=True, related=related)
+            api.merge(master, other, fields=fields, commit=True, related=related, m2m=m2m)
             return HttpResponseRedirect(request.path)
         else:
             messages.error(request, form.errors)
