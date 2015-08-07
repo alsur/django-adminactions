@@ -39,6 +39,7 @@ from adminactions.exceptions import ActionInterrupted
 from adminactions.forms import GenericActionForm
 from adminactions.signals import adminaction_requested, adminaction_start, adminaction_end
 
+from django.conf import settings
 
 DO_NOT_MASS_UPDATE = 'do_NOT_mass_UPDATE'
 
@@ -359,8 +360,24 @@ def mass_update(modeladmin, request, queryset):  # noqa
     adminForm = helpers.AdminForm(form, modeladmin.get_fieldsets(request), {}, [], model_admin=modeladmin)
     media = modeladmin.media + adminForm.media
     dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.date) else str(obj)
+
+
+    configured_fields = adminForm.form.configured_fields()
+    model_fields = adminForm.form.model_fields()
+
+    adminactions_filters = getattr(settings, 'ADMINACTIONS_FILTERS', None)
+    if adminactions_filters:
+        for af in adminactions_filters:
+            configured_fields = filter(af, configured_fields)
+            model_fields = filter(af, model_fields)
+    # raise Exception('adminform')
+
+
+
     tpl = 'adminactions/mass_update.html'
     ctx = {'adminform': adminForm,
+           'configured_fields': configured_fields,
+           'model_fields': model_fields,
            'form': form,
            'title': u"Mass update %s" % smart_text(modeladmin.opts.verbose_name_plural),
            'grouped': grouped,

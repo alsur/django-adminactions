@@ -20,6 +20,8 @@ from adminactions.models import get_permission_codename
 from adminactions.utils import clone_instance
 import adminactions.compat as transaction
 
+from django.conf import settings
+
 
 class MergeForm(GenericActionForm):
     DEP_MOVE = 1
@@ -95,12 +97,19 @@ def merge(modeladmin, request, queryset):  # noqa
     tpl = 'adminactions/merge.html'
     # transaction_supported = model_supports_transactions(modeladmin.model)
 
+    ctx_fields = [f for f in queryset.model._meta.fields if not f.primary_key and f.editable]
+
+    adminactions_filters = getattr(settings, 'ADMINACTIONS_FILTERS', None)
+    if adminactions_filters:
+        for af in adminactions_filters:
+            ctx_fields = filter(af, ctx_fields)
+
     ctx = {
         '_selected_action': request.POST.getlist(helpers.ACTION_CHECKBOX_NAME),
         'transaction_supported': 'Un',
         'select_across': request.POST.get('select_across') == '1',
         'action': request.POST.get('action'),
-        'fields': [f for f in queryset.model._meta.fields if not f.primary_key and f.editable],
+        'fields': ctx_fields,
         'app_label': queryset.model._meta.app_label,
         'result': '',
         'opts': queryset.model._meta}
@@ -172,6 +181,8 @@ def merge(modeladmin, request, queryset):  # noqa
 
     adminForm = helpers.AdminForm(form, modeladmin.get_fieldsets(request), {}, [], model_admin=modeladmin)
     media = modeladmin.media + adminForm.media
+
+
     ctx.update({'adminform': adminForm,
                 'formset': formset,
                 'media': mark_safe(media),
