@@ -19,6 +19,7 @@ else:
 
 from collections import defaultdict
 from django import forms
+
 from django.db.models import fields as df
 from django.forms import fields as ff
 from django.forms.models import modelform_factory, ModelMultipleChoiceField, construct_instance, InlineForeignKeyField
@@ -40,6 +41,7 @@ from adminactions.forms import GenericActionForm
 from adminactions.signals import adminaction_requested, adminaction_start, adminaction_end
 
 from django.conf import settings
+import inspect
 
 DO_NOT_MASS_UPDATE = 'do_NOT_mass_UPDATE'
 
@@ -101,8 +103,16 @@ class OperationManager(object):
         for field_class, args in list(_dict.items()):
             self._dict[field_class] = SortedDict(self.COMMON + args)
 
-    def get(self, field_class, d=None):
-        return self._dict.get(field_class, SortedDict(self.COMMON))
+    def get(self, field_classes, d=None):
+        # field_classes trae ahora todas las clases del campo (tanto la principal como las clases padre)
+        # y obtengo todas sus operaciones.
+        # luego lo que hago es agruparlos todos para devolver un unico SorterDict.
+        operations_by_classes = map(self._dict.get, field_classes)
+        operations_field = []
+        for obc in operations_by_classes:
+            if isinstance(obc, dict):
+                operations_field = operations_field + obc.items()
+        return SortedDict(operations_field)
 
     def get_for_field(self, field):
         """ returns valid functions for passed field
@@ -110,7 +120,13 @@ class OperationManager(object):
             :return list of (label, (__, param, enabler, help))
         """
         valid = SortedDict()
-        operators = self.get(field.__class__)
+
+        # un campo no deberia solo mostrarse las operaciones de la clase directa sino de todas
+        # las clases padres, ya que si el campo es de una clase nueva que creemos que herede
+        # de otra no implementaria las operaciones de la clase padre.
+        field_classes = inspect.getmro(field.__class__)
+        operators = self.get(field_classes)
+
         for label, (func, param, enabler, help) in list(operators.items()):
             if (callable(enabler) and enabler(field)) or enabler is True:
                 valid[label] = (func, param, enabler, help)
@@ -118,7 +134,6 @@ class OperationManager(object):
 
     def __getitem__(self, field_class):
         return self.get(field_class)
-
 
 OPERATIONS = OperationManager({
     df.CharField: [('upper', (string.upper, False, True, "convert to uppercase")),
@@ -138,7 +153,7 @@ OPERATIONS = OperationManager({
     # AUTHOR: jose@alsur.es
     # agrego metodos para los manytomanyfield
     df.related.ManyToManyField: [('add items', (add_items, True, True, "")),
-                         ('remove items', (remove_items, True, True, ""))],
+                                 ('remove items', (remove_items, True, True, ""))],
 })
 
 
@@ -370,7 +385,6 @@ def mass_update(modeladmin, request, queryset):  # noqa
         for af in adminactions_filters:
             configured_fields = filter(af, configured_fields)
             model_fields = filter(af, model_fields)
-    # raise Exception('adminform')
 
 
 
