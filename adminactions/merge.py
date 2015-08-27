@@ -100,6 +100,7 @@ def merge(modeladmin, request, queryset):  # noqa
     ctx_fields = [f for f in queryset.model._meta.fields if not f.primary_key and f.editable]
 
     adminactions_filters = getattr(settings, 'ADMINACTIONS_FILTERS', None)
+    adminactions_filters.extend(getattr(settings, 'ADMINACTIONS_MERGE_FILTERS', None))
     if adminactions_filters:
         for af in adminactions_filters:
             ctx_fields = filter(af, ctx_fields)
