@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2013-12-29 10:54+0100\n"
-"PO-Revision-Date: 2015-08-28 14:06+0200\n"
+"PO-Revision-Date: 2015-08-28 14:26+0200\n"
 "Last-Translator: abel <cesarabel@johnmay.com.ni>\n"
 "Language-Team: deltacopiers\n"
 "Language: es\n"
@@ -154,3 +154,7 @@ msgstr "Unir"
 #: graph.py:150
 msgid "Graph selected records"
 msgstr "Grafica de los datos seleccionados"
+
+#: merge.py:36
+msgid "Move dependencies from other to master or Delete dependencies of other"
+msgstr "Mueve las dependencias de OTRO a MASTER o Elimina las dependencias de OTRO"

@@ -31,7 +31,9 @@ class MergeForm(GenericActionForm):
     GEN_DEEP = 3
 
     dependencies = forms.ChoiceField(label=_('Dependencies'),
-                                     choices=((DEP_MOVE, _("Move")), (DEP_DELETE, _("Delete"))))
+                                     choices=((DEP_MOVE, _("Move")), (DEP_DELETE, _("Delete"))),
+                                     help_text=_('Move dependencies from other to master '
+                                                 'or Delete dependencies of other'))
 
     # generic = forms.ChoiceField(label=_('Search GenericForeignKeys'),
     #                             help_text=_("Search for generic relation"),
