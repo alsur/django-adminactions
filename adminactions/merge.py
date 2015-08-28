@@ -105,6 +105,7 @@ def merge(modeladmin, request, queryset):  # noqa
         for af in adminactions_filters:
             ctx_fields = filter(af, ctx_fields)
 
+
     ctx = {
         '_selected_action': request.POST.getlist(helpers.ACTION_CHECKBOX_NAME),
         'transaction_supported': 'Un',
@@ -122,7 +123,7 @@ def merge(modeladmin, request, queryset):  # noqa
         formset = formset_factory(OForm)(initial=[model_to_dict(master), model_to_dict(other)])
         with transaction.nocommit():
             form = MForm(request.POST, instance=master)
-            other.delete()
+            #other.delete() # WHY???
             form_is_valid = form.is_valid()
         if form_is_valid:
             ctx.update({'original': original})
@@ -138,7 +139,7 @@ def merge(modeladmin, request, queryset):  # noqa
         with transaction.nocommit():
             form = MForm(request.POST, instance=master)
             stored_pk = other.pk
-            other.delete()
+            #other.delete() # WHY???
             ok = form.is_valid()
             other.pk = stored_pk
         if ok:

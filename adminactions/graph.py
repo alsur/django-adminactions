@@ -21,6 +21,8 @@ from adminactions.exceptions import ActionInterrupted
 from adminactions.signals import adminaction_requested, adminaction_start, adminaction_end
 from six.moves import zip
 
+from django.utils.translation import gettext as _
+
 
 def graph_form_factory(model):
     app_name = model._meta.app_label
@@ -147,4 +149,4 @@ def graph_queryset(modeladmin, request, queryset):  # noqa
     return render_to_response('adminactions/charts.html', RequestContext(request, ctx))
 
 
-graph_queryset.short_description = "Graph selected records"
+graph_queryset.short_description = _("Graph selected records")
