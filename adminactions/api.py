@@ -4,6 +4,7 @@ import six
 import pytz
 import xlwt
 import datetime
+import inspect
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.fields import FieldDoesNotExist
@@ -142,7 +143,13 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
                             if add_relateds:
                                 for add_related_item in add_relateds:
                                     element_relateds_m2m.add(add_related_item)
-                    element.save()
+                    save_args = inspect.getargspec(element.save)
+                    # agrego el argumento prevent_add_relation si viene para parar posible bucle infinito
+                    # si es una relacion circular.
+                    if 'prevent_add_relation' in save_args.args:
+                        element.save(prevent_add_relation=True)
+                    else:
+                        element.save()
 
 
             # django.db.models.deletion viene con un comentario #FIXME
@@ -163,7 +170,12 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
                 other.delete()
             result.save()
             for fieldname, elements in list(all_m2m.items()):
+                # si el m2m requiere de una tabla intermedia personalizada y no viene con auto_created pasamos
+                # al siguiente. Este error cuando ha dado ya se habian creado las relaciones al ser al mismo tiempo
+                # related.
                 dest_m2m = getattr(result, fieldname)
+                if dest_m2m.through and not dest_m2m.through._meta.auto_created:
+                    continue
                 for element in elements:
                     dest_m2m.add(element)
     return result
