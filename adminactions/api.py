@@ -53,7 +53,15 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
     """
 
     fields = fields or [f.name for f in master._meta.fields]
-
+    # EL FANTASTICO UNIVERSO DEL MANY2MANY EN DJANGO
+    # 1: master._meta.get_all_related_objects(False, False, False)
+    #   -- devuelvo todos los que no sean manytomany
+    # 2: master._meta.many_to_many
+    #   -- m2m incluidos directamente en la clase modelo o en la clase padre
+    # 3: master._meta.local_many_to_many
+    #   -- m2m incluidos directamente en la clase modelo
+    # 4: master._meta.get_all_related_many_to_many_objects
+    #   -- devuelve los m2m de la clase principal (no de la que hereda).
     all_m2m = {}
     all_related = {}
     all_related_related = {}
@@ -64,6 +72,12 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
 
     if m2m == ALL_FIELDS:
         m2m = [field.name for field in master._meta.many_to_many]
+        # los many2many que se crean en otros modelos no se obtienen por many_to_many, sin embargo con
+        # get_all_related_many_to_many_objects no obtengo los propios asi que los sumo, descartando
+        # los que su modelo relacionado es igual al modelo destino (m2m circular)
+        m2m += [field.name for field in master._meta.get_all_related_many_to_many_objects()
+                if field.related_model != field.to]
+
     if m2m and not commit:
         raise ValueError('Cannot save related with `commit=False`')
     with compat.atomic():
@@ -80,7 +94,13 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
                 all_m2m[fieldname] = []
                 field_object = get_field_by_path(master, fieldname)
                 if not isinstance(field_object, ManyToManyField):
-                    raise ValueError('{0} is not a ManyToManyField field'.format(fieldname))
+                    # Si hemos obtenido alguno a traves de get_all_related_many_to_many_objects el field_object
+                    # no es directamente un ManyToManyField pero su atributo field SI, es por eso que si viene
+                    # el atributo y es ManyToManyField saltamos la excepcion.
+                    if hasattr(field_object, 'field') and isinstance(field_object.field, ManyToManyField):
+                        pass
+                    else:
+                        raise ValueError('{0} is not a ManyToManyField field'.format(fieldname))
                 source_m2m = getattr(other, field_object.name)
                 for r in source_m2m.all():
                     all_m2m[fieldname].append(r)
