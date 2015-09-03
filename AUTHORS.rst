@@ -24,6 +24,7 @@ Contributors
 * jht001 (`@jht001`_)
 * Cesar Abel (`@xangmuve`_)
 * Viator (`@viatoriche`_)
+* SRJ9 (`@SRJ9`_)
 
 .. _`@tdruez`: https://github.com/tdruez
 .. _`@jht001`: https://github.com/jht001
@@ -37,4 +38,5 @@ Contributors
 .. _`@ipmb`: https://github.com/ipmb
 .. _`@xangmuve`: https://github.com/xangmuve
 .. _`@viatoriche`: https://github.com/viatoriche
+.. _`@SRJ9`: https://github.com/SRJ9
 

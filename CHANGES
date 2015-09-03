@@ -1,3 +1,20 @@
+Release 0.9 by SRJ9 (spanish, pending of translate)
+===================
+* algunos elementos OneToOne relacionados con OTHER tienen a su vez otras relaciones many_to_many que se pierden al hacer el merge. Los agrupo para luego modificarlos. (api.py:94-115, 128-144)
+* si el elemento OTHER hereda de otro modelo, daba un error al eliminar el elemento padre porque no lo retornaba con el ID. Ahora, tras unas comprobaciones elimino directamente el padre. (api.py: 147-161)
+* agrego la posibilidad en el mass_update de agregar o eliminar items en un campo ManyToMany y no solo de reemplazarlo. (mass_update.py: 58-75 (functions), 137-140)
+* si hemos seleccionado MOVER en el merge como opcion para qué hacer con las dependencias, agregamos tambien los manytomany a la operación del merge. Anteriormente no hacia nada con los m2m por lo que se perdían en el merge (merge.py: 135-144)
+* importo SETTINGS para poder personalizar qué campos mostrar/ocultar en mass_update y/o merge mediante filtros. Esta variable en SETTINGS se llamará ADMINACTIONS_FILTERS. (mass_update.py: 42 (import settings), 363-376, 379-380 (renombrar variables); merge.py: 23 (import settings), 100-106, 112 (renombro variable); mass_update.html: 46, 69)
+* posibilidad de agregar también filtros no compartidos para los campos de mass_update y merge. En mass_update:384 el SETTINGS se llamará ADMINACTIONS_MASS_FILTERS, mientras que en merge:103 será ADMINACTIONS_MERGE_FILTERS.
+* si un modelo hereda de otro que tenga unas acciones concretas en el mass_update tambien estaran disponibles para este, aunque no este especificado directamente, mediante inspect. El metodo get recibe ahora el parametro field_classes en lugar de field_class ya que pueden venir varias. (mass_update.py: 44 (import inspect), 106-115 (def get), 123-128)
+* agrego gettext a graph.py para poder traducir la descripcion (graph.py: 24, 152)
+* En la vista previa del merge, si lo cancelabas se perdía ya el registro OTHER. Este error ocurre en mysql, no así en sqlite. He comentado esta linea en 'preview' y en 'apply', ya que el paso debe hacerlo en la llamada a api.merge (merge.py: 126, 141)
+* modifico algunas traducciones en español y creo su archivo compilado .mo
+* agrego help_text al merge para explicar que se hara con las dependencias segun la opcion seleccionada (merge.py: 34-36, merge.html: 31)
+* este arreglo es mas bien para uso individual pero lo dejo implementado: si el save contiene un argumento prevent_add_relation=True, en mi caso para que evite cierta programacion. (api.py: 7 (import inspect), 146-151)
+* si una relacion m2m requiere de una tabla through (contiene informacion extra aparte de la relacion) me la salto en el proceso que hago con related (api.py: 173-178)
+* En merge:many_to_many solo obtenia los many_to_many del propio modelo o del modelo heredado, pero no los creados en otros modelos relacionados con este. Ahora los sumo para tenerlos todos, descartando los que tuvieran un m2m circular (m2m entre dos instancias del mismo modelo). Tambien corrijo para evitar la excepcion cuando ocurre este caso, ya que los atributos a usar varian (api.py: 56-64, 75-80, 97-102)
+
 Release 0.8.5
 =============
 * repackage due broken version in 0.8.4
