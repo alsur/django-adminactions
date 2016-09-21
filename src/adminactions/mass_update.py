@@ -4,6 +4,7 @@ import datetime
 import json
 import re
 import six
+import inspect
 from collections import OrderedDict as SortedDict, defaultdict
 
 import django
@@ -78,8 +79,13 @@ class OperationManager(object):
         for field_class, args in list(_dict.items()):
             self._dict[field_class] = SortedDict(self.COMMON + args)
 
-    def get(self, field_class, d=None):
-        return self._dict.get(field_class, SortedDict(self.COMMON))
+    def get(self, field_classes, d=None):
+        operation_by_classes = map(self._dict.get, field_classes)
+        operation_fields = []
+        for obc in operation_by_classes:
+            if isinstance(obc, dict):
+                operation_fields += obc.items()
+        return SortedDict(operation_fields)
 
     def get_for_field(self, field):
         """ returns valid functions for passed field
@@ -87,7 +93,8 @@ class OperationManager(object):
             :return list of (label, (__, param, enabler, help))
         """
         valid = SortedDict()
-        operators = self.get(field.__class__)
+        field_classes = inspect.getmro(field.__class__)
+        operators = self.get(field_classes)
         for label, (func, param, enabler, help) in list(operators.items()):
             if (callable(enabler) and enabler(field)) or enabler is True:
                 valid[label] = (func, param, enabler, help)
