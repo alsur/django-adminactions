@@ -74,6 +74,8 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
 
     all_m2m = {}
     all_related = {}
+    # all_distant_related contains all m2m relations of OneToOneField related
+    all_distant_related = {}
 
     if related == ALL_FIELDS:
         related = [rel.get_accessor_name()
@@ -110,6 +112,16 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
                     try:
                         accessor = getattr(other, name)
                         all_related[name] = [(related_object.field.name, accessor)]
+
+                        # accesor_m2m: list of many to many (m2m) of OneToOneField accesor to not lose them
+                        accessor_m2m = [field.name for field in accessor._meta.many_to_many]
+                        if accessor_m2m:
+                            all_distant_related[name] = {}
+                            for acc_m2m_name in accessor_m2m:
+                                # acc_m2m_name: each of m2m field names of current accessor
+                                # acc_m2m_field_items = each of related items of this m2m relation.
+                                acc_m2m_field_items = getattr(accessor, acc_m2m_name)
+                                all_distant_related[name][acc_m2m_name] = acc_m2m_field_items.all()
                     except ObjectDoesNotExist:
                         pass
                 else:
@@ -123,6 +135,27 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
             for name, elements in list(all_related.items()):
                 for rel_fieldname, element in elements:
                     setattr(element, rel_fieldname, master)
+                    # If name is in all_distant_related, current OneToOneField contains m2m relations and they must be saved.
+                    if name in all_distant_related:
+                        # distant_relations: contains all m2m relations of current OTHER's OneToOne related field
+                        distant_relations = all_distant_related.get(name, None)
+                        for distant_related_name in distant_relations:
+                            # distant_related_name: name of each distant_relation
+                            # element_related_items: M2M relation of OneToOne field in current object
+                            # distant_related_items: M2M relation of OneToOne field in distant object
+                            element_related_items = getattr(element, distant_related_name, None)
+                            distant_related_items = distant_relations.get(distant_related_name, None)
+                            if distant_related_items:
+                                # distant_related: Item of M2M relation of OneToOne field in distant object
+                                for distant_related in distant_related_items:
+                                    # ManyToManyField with intermediary model not allow
+                                    # "add" option, because it needs more fields to be created.
+                                    if element_related_items.through._meta.auto_created:
+                                        element_related_items.add(distant_related)
+                                    else:
+                                        # @todo Solved if we add auto_created=True to Meta class of intermediary model
+                                        # http://stackoverflow.com/a/28038761
+                                        pass
                     element.save()
 
             other.delete()
