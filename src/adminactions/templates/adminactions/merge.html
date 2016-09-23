@@ -26,8 +26,11 @@
             {{ adminform.form.field_names }}
             <table>
                 <tr>
-                    <td>{{ adminform.form.dependencies.label }}</td>
-                    <td>{{ adminform.form.dependencies }}</td>
+                    <td>
+                        <input type="hidden" id="id_dependencies" name="dependencies" value="1">
+                    </td>
+{#                    <td>{{ adminform.form.dependencies.label }}</td>#}
+{#                    <td>{{ adminform.form.dependencies }}</td>#}
                 </tr>
             </table>
             <table class="mergetable table table-striped" style="width:100%; overflow: hidden">
