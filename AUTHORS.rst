@@ -26,6 +26,7 @@ Contributors
 * Viator (`@viatoriche`_)
 * Serhiy Zahoriya (`@int-ua`_)
 * Pavel Savchenko (`@asfaltboy`_)
+* Jose E.R (`@SRJ9`_)
 
 .. _`@tdruez`: https://github.com/tdruez
 .. _`@jht001`: https://github.com/jht001
@@ -41,4 +42,4 @@ Contributors
 .. _`@viatoriche`: https://github.com/viatoriche
 .. _`@asfaltboy`: https://github.com/asfaltboy
 .. _`@int-ua`: https://github.com/int-ua
-
+.. _`@SRJ9`: https://github.com/SRJ9
