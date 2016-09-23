@@ -125,7 +125,7 @@ def merge(modeladmin, request, queryset):  # noqa
         formset = formset_factory(OForm)(initial=[model_to_dict(master), model_to_dict(other)])
         with transaction.nocommit():
             form = MForm(request.POST, instance=master)
-            other.delete()
+            # other.delete() # WHY???
             form_is_valid = form.is_valid()
         if form_is_valid:
             ctx.update({'original': original})
@@ -141,7 +141,7 @@ def merge(modeladmin, request, queryset):  # noqa
         with transaction.nocommit():
             form = MForm(request.POST, instance=master)
             stored_pk = other.pk
-            other.delete()
+            # other.delete() # WHY ???
             ok = form.is_valid()
             other.pk = stored_pk
         if ok:
