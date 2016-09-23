@@ -179,6 +179,10 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
             result.save()
             for fieldname, elements in list(all_m2m.items()):
                 dest_m2m = getattr(result, fieldname)
+                # skip m2m if it doesn't have auto_created meta.
+                # auto_created is not present when m2m relation requires a intermediary model
+                if dest_m2m.through and not dest_m2m.through._meta.auto_created:
+                    continue
                 for element in elements:
                     dest_m2m.add(element)
     return result
