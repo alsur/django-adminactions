@@ -175,7 +175,20 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
                     else:
                         element.save()
 
-            other.delete()
+            #noqa
+            # If OTHER has parents (inherited model), to delete the parent instead OTHER.
+            # It seems that parent does not retrieve its PK. Fixed.
+            other_meta_parents = len(other._meta.parents)
+            if other_meta_parents:
+                for ptr in six.itervalues(other._meta.parents):
+                    if ptr:
+                        parent_other = getattr(other, ptr.name, None) # parent element
+                        parent_other_pk_attname = parent_other._meta.pk.attname # get name of pk
+                        parent_other_pk = other._get_pk_val()
+                        setattr(parent_other, parent_other_pk_attname, parent_other_pk)
+                        parent_other.delete()
+            else:
+                other.delete()
             result.save()
             for fieldname, elements in list(all_m2m.items()):
                 dest_m2m = getattr(result, fieldname)
