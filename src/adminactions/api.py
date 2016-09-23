@@ -5,6 +5,7 @@ import collections
 import datetime
 import itertools
 import six
+import inspect
 
 import pytz
 import xlwt
@@ -164,7 +165,15 @@ def merge(master, other, fields=None, commit=False, m2m=None, related=None):  # 
                                         # @todo Solved if we add auto_created=True to Meta class of intermediary model
                                         # http://stackoverflow.com/a/28038761
                                         pass
-                    element.save()
+                    # avoid circular reference loop
+                    # Avoid this behavior
+                    # adding "prevent_add_relation" in model's "save" method
+                    # and modifying the affected logic.
+                    save_args = inspect.getargspec(element.save)
+                    if 'prevent_add_relation' in save_args.args:
+                        element.save(prevent_add_relation=True)
+                    else:
+                        element.save()
 
             other.delete()
             result.save()
