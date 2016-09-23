@@ -343,8 +343,12 @@ def mass_update(modeladmin, request, queryset):  # noqa
     model_fields = adminForm.form.model_fields()
 
     adminactions_filters = []
-    adminactions_filters.extend(getattr(settings, 'ADMINACTIONS_FILTERS', None))
-    adminactions_filters.extend(getattr(settings, 'ADMINACTIONS_MASS_FILTERS', None))
+    adminactions_filters_settings = getattr(settings, 'ADMINACTIONS_FILTERS', None)
+    if adminactions_filters_settings:
+        adminactions_filters.extend(adminactions_filters_settings)
+    adminactions_mass_filters_settings = getattr(settings, 'ADMINACTIONS_MASS_FILTERS', None)
+    if adminactions_mass_filters_settings:
+        adminactions_filters.extend(adminactions_mass_filters_settings)
     if adminactions_filters:
         for aaf in adminactions_filters:
             configured_fields = filter(aaf, configured_fields)
