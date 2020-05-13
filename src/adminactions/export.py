@@ -15,7 +15,7 @@ from django.db import router
 from django.db.models import ForeignKey, ManyToManyField
 from django.db.models.deletion import Collector
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, render
 from django.template.context import RequestContext
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
