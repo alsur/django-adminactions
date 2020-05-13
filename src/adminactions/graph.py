@@ -160,7 +160,10 @@ def graph_queryset(modeladmin, request, queryset):  # noqa
         ctx.update(modeladmin.admin_site.each_context(request))
     else:
         ctx.update(modeladmin.admin_site.each_context())
-    return render_to_response('adminactions/charts.html', RequestContext(request, ctx))
+    if django.VERSION[:2] > (1, 9):
+        return render(request, 'adminactions/charts.html', ctx)
+    else:
+        return render_to_response('adminactions/charts.html', RequestContext(request, ctx))
 
 
 graph_queryset.short_description = _("Graph selected records")

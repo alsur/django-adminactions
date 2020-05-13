@@ -405,7 +405,7 @@ def mass_update(modeladmin, request, queryset):  # noqa
     else:
         ctx.update(modeladmin.admin_site.each_context())
 
-    if django.VERSION[:2] > (1, 8):
+    if django.VERSION[:2] > (1, 9):
         return render(request, tpl, context=ctx)
     else:
         return render_to_response(tpl, RequestContext(request, ctx))

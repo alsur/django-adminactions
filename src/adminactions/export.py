@@ -126,7 +126,10 @@ def base_export(modeladmin, request, queryset, title, impl,  # noqa
         ctx.update(modeladmin.admin_site.each_context(request))
     else:
         ctx.update(modeladmin.admin_site.each_context())
-    return render_to_response(template, RequestContext(request, ctx))
+    if django.VERSION[:2] > (1, 9):
+        return render(request, template, ctx)
+    else:
+        return render_to_response(template, RequestContext(request, ctx))
 
 
 def export_as_csv(modeladmin, request, queryset):
@@ -320,7 +323,10 @@ def export_as_fixture(modeladmin, request, queryset):
         ctx.update(modeladmin.admin_site.each_context(request))
     else:
         ctx.update(modeladmin.admin_site.each_context())
-    return render_to_response(tpl, RequestContext(request, ctx))
+    if django.VERSION[:2] > (1, 9):
+        return render(request, tpl, ctx)
+    else:
+        return render_to_response(tpl, RequestContext(request, ctx))
 
 
 export_as_fixture.short_description = _("Export as fixture")
